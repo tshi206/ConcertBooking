@@ -1,6 +1,39 @@
 # Compiled class file
 *.class
 
+#intellij
+.idea/workspace.xml
+**/*.swp
+**/*.swo
+
+#eclipse
+**/*.class
+*.log
+**/.metadata/
+**/.recommenders/
+**/RemoteSystemsTempFiles/
+**/.metadata/**
+**/.recommenders/**
+**/RemoteSystemsTempFiles/**
+**/.metadata/*
+**/.recommenders/*
+**/RemoteSystemsTempFiles/*
+**/.metadata/.*
+**/.recommenders/.*
+**/RemoteSystemsTempFiles/.*
+**/.classpath
+**/.project
+**/.settings
+**/.settings/**
+**/.settings/*
+**/.settings/.*
+.classpath
+.project
+.settings
+bin
+**/bin
+**/bin/**
+
 # Log file
 *.log
 
