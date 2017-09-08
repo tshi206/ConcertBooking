@@ -1,4 +1,4 @@
-package nz.ac.auckland.concert.service.util;
+package nz.ac.auckland.concert.service.domain.jpa;
 
 import nz.ac.auckland.concert.service.domain.Concert;
 import nz.ac.auckland.concert.service.domain.Performer;
@@ -12,11 +12,11 @@ import java.io.Serializable;
 @Embeddable
 public class ConcertPerformerCompositePK implements Serializable {
 
-    @ManyToOne(cascade={CascadeType.PERSIST, CascadeType.REMOVE, CascadeType.MERGE})
+    @ManyToOne(cascade={CascadeType.PERSIST})
     @JoinColumn(name = "cid", nullable = false)
     private Concert concert;
 
-    @ManyToOne(cascade={CascadeType.PERSIST, CascadeType.REMOVE, CascadeType.MERGE})
+    @ManyToOne(cascade={CascadeType.PERSIST})
     @JoinColumn(name = "pid", nullable = false)
     private Performer performer;
 
