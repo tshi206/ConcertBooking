@@ -7,6 +7,11 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * DTO class to represent reservations. 
  * 
@@ -20,8 +25,11 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *                     of SeatDTO objects).
  *
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class ReservationDTO {
-	
+
+	@XmlAttribute
 	private Long _id;
 	private ReservationRequestDTO _request;
 	private Set<SeatDTO> _seats;

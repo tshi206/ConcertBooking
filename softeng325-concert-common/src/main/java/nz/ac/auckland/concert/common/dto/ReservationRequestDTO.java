@@ -7,6 +7,10 @@ import nz.ac.auckland.concert.common.types.PriceBand;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * DTO class to represent reservation requests. 
  * 
@@ -18,6 +22,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  *                reserved.
  *
  */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.FIELD)
 public class ReservationRequestDTO {
 
 	private int _numberOfSeats;
