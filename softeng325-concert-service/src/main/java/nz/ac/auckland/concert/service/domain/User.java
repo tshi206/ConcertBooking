@@ -15,14 +15,17 @@ public class User {
     @GeneratedValue
     private Long uid;
 
+    @Column(nullable = false, unique = true)
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
     private String firstname;
 
     private String lastname;
 
+    @Column(nullable = false, unique = true)
     private String token;
 
     public User(){}

@@ -12,7 +12,6 @@ import java.util.Set;
 public class Reservation {
 
     @Id
-    @GeneratedValue
     private Long rid;
 
     @ManyToOne
@@ -35,14 +34,15 @@ public class Reservation {
     @org.hibernate.annotations.Fetch(
             org.hibernate.annotations.FetchMode.SUBSELECT)
     @JoinColumn(
-            name = "rid",
+            name = "reservation_id",
             nullable= false
     )
     private Set<Seat> bookedSeats = new HashSet<>();
 
     public Reservation() {}
 
-    public Reservation(User user, ConcertDate concertDate, ConcertTarif concertTarif, Set<Seat> bookedSeats) {
+    public Reservation(Long rid, User user, ConcertDate concertDate, ConcertTarif concertTarif, Set<Seat> bookedSeats) {
+        this.rid = rid;
         this.user = user;
         this.concertDate = concertDate;
         this.concertTarif = concertTarif;

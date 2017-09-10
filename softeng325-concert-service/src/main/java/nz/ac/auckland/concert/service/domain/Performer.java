@@ -43,6 +43,8 @@ public class Performer {
         return _imageName;
     }
 
+    public Genre getGenre() { return _genre; }
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Performer))

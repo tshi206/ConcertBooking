@@ -2,6 +2,7 @@ package nz.ac.auckland.concert.service.domain;
 
 import nz.ac.auckland.concert.common.types.SeatNumber;
 import nz.ac.auckland.concert.common.types.SeatRow;
+import nz.ac.auckland.concert.service.domain.jpa.SeatCompositePK;
 import nz.ac.auckland.concert.service.domain.jpa.SeatNumberConverter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -12,31 +13,17 @@ import javax.persistence.*;
 @Table(name = "BOOKED_SEATS")
 public class Seat {
 
-    @Id
-    @GeneratedValue
-    private Long sid;
+    @EmbeddedId
+    private SeatCompositePK seatCompositePK;
 
-    @Enumerated
-    @Column(name = "row", nullable = false)
-    private SeatRow _row;
-
-    @Convert(converter = SeatNumberConverter.class)
-    @Column(name = "seatNumber", nullable = false)
-    private SeatNumber _number;
-
-    public Seat() {}
-
-    public Seat(SeatRow row, SeatNumber number) {
-        _row = row;
-        _number = number;
+    public Seat(SeatCompositePK seatCompositePK) {
+        this.seatCompositePK = seatCompositePK;
     }
 
-    public SeatRow getRow() {
-        return _row;
-    }
+    public Seat() { }
 
-    public SeatNumber getNumber() {
-        return _number;
+    public SeatCompositePK getSeatCompositePK() {
+        return seatCompositePK;
     }
 
     @Override
@@ -48,21 +35,21 @@ public class Seat {
 
         Seat rhs = (Seat) obj;
         return new EqualsBuilder().
-                append(_row, rhs._row).
-                append(_number, rhs._number).
+                append(seatCompositePK.getRow(), rhs.seatCompositePK.getRow()).
+                append(seatCompositePK.getNumber(), rhs.seatCompositePK.getNumber()).
                 isEquals();
     }
 
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 31).
-                append(_row).
-                append(_number).
+                append(seatCompositePK.getRow()).
+                append(seatCompositePK.getNumber()).
                 hashCode();
     }
 
     @Override
     public String toString() {
-        return _row + _number.toString();
+        return seatCompositePK.getRow() + seatCompositePK.getNumber().toString();
     }
 }
