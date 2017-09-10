@@ -24,7 +24,7 @@ import java.util.Set;
 public class PerformerResource {
 
     private static Logger _logger = LoggerFactory
-            .getLogger(ConcertResource.class);
+            .getLogger(PerformerResource.class);
 
     private PersistenceManager persistenceManager = PersistenceManager.instance();
 

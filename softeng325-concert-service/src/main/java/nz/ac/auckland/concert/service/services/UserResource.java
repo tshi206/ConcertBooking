@@ -28,7 +28,7 @@ import java.util.UUID;
 public class UserResource {
 
     private static Logger _logger = LoggerFactory
-            .getLogger(ConcertResource.class);
+            .getLogger(UserResource.class);
 
     private PersistenceManager persistenceManager = PersistenceManager.instance();
 

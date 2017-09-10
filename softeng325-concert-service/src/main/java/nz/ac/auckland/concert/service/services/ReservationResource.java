@@ -1,6 +1,5 @@
 package nz.ac.auckland.concert.service.services;
 
-import com.sun.org.apache.regexp.internal.RE;
 import nz.ac.auckland.concert.common.Config;
 import nz.ac.auckland.concert.common.dto.BookingDTO;
 import nz.ac.auckland.concert.common.dto.ReservationDTO;
@@ -24,18 +23,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Path("/reservations")
 public class ReservationResource {
 
     private static Logger _logger = LoggerFactory
-            .getLogger(ConcertResource.class);
+            .getLogger(ReservationResource.class);
 
     private PersistenceManager persistenceManager = PersistenceManager.instance();
-
-    private AtomicBoolean isTimeOut = new AtomicBoolean(true);
 
     private Timer timer;
 
@@ -43,9 +39,7 @@ public class ReservationResource {
 
     private Reservation reservation;
 
-    private static Map<Reservation, AtomicBoolean> timerPerRequest = new HashMap<>();
-
-    private static Map<Long, Reservation> idPerReservarion = new HashMap<>();
+    private static Map<Long, Reservation> pendingReservation = new HashMap<>();
 
     @POST
     @Path("/reservation_request")
@@ -111,7 +105,7 @@ public class ReservationResource {
             reservation = new Reservation(reservation_id.incrementAndGet(), user,
                     concertDate, concertTarif, seatsToBePersisted
                     );
-            response = Response.ok(new ReservationDTO(reservation_id.get(), reservationRequestDTO,
+            response = Response.ok(new ReservationDTO(reservation.getRid(), reservationRequestDTO,
                     seatsAvailable)).build();
         }catch (NonUniqueResultException nonUniqueResultException){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
@@ -124,16 +118,14 @@ public class ReservationResource {
             if (entityManager!=null && entityManager.isOpen())
                 entityManager.close();
         }
-        idPerReservarion.put(reservation_id.get(), reservation);
-        timerPerRequest.put(reservation, isTimeOut);
-        isTimeOut.set(false);
+        pendingReservation.put(reservation.getRid(), reservation);
         timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                isTimeOut.set(true);
+                pendingReservation.remove(reservation.getRid());
             }
-        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS);
+        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS * 1000l);
         return response;
     }
 
@@ -146,9 +138,8 @@ public class ReservationResource {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.UNAUTHENTICATED_REQUEST).build());
         }
-        if (timerPerRequest.get(idPerReservarion.get(reservation.getId())).get()){
-            timerPerRequest.remove(idPerReservarion.get(reservation.getId()));
-            idPerReservarion.remove(reservation.getId());
+        Reservation reservationToBePersisted = pendingReservation.remove(reservation.getId());
+        if (reservationToBePersisted == null){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.EXPIRED_RESERVATION).build());
         }
@@ -166,8 +157,6 @@ public class ReservationResource {
                 throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                         entity(Messages.CREDIT_CARD_NOT_REGISTERED).build());
             }
-            timerPerRequest.remove(idPerReservarion.get(reservation.getId()));
-            Reservation reservationToBePersisted = idPerReservarion.remove(reservation.getId());
             entityManager.persist(reservationToBePersisted);
             entityManager.getTransaction().commit();
             response = Response.status(Response.Status.NO_CONTENT).build();

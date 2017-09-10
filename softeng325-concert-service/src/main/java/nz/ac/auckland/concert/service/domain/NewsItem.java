@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 public class NewsItem {
 
     @Id
-    @GeneratedValue
     private Long _id;
 
     @Convert(converter = LocalDateTimeConverter.class)
