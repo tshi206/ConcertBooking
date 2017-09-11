@@ -4,7 +4,6 @@ import nz.ac.auckland.concert.common.dto.PerformerDTO;
 import nz.ac.auckland.concert.common.message.Messages;
 import nz.ac.auckland.concert.service.domain.ConcertPerformer;
 import nz.ac.auckland.concert.service.domain.Performer;
-import nz.ac.auckland.concert.service.util.AW3Downloader;
 import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.awt.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,24 +62,4 @@ public class PerformerResource {
         _logger.info("retrieved all performers successfully");
         return Response.ok(result).build();
     }
-
-    @GET
-    @Path("/images/{imageName}")
-    @Produces(MediaType.APPLICATION_XML)
-    public Response retrievePerformersImage(@PathParam("imageName") String imageName) {
-        try{
-            AW3Downloader.initAW3Downloader();
-            List<Image> images = AW3Downloader.fetchPerformerImage(imageName);
-            if (images.isEmpty()){
-                throw new BadRequestException(Response.status(Response.Status.NOT_FOUND).
-                        entity(Messages.NO_IMAGE_FOR_PERFORMER).build());
-            }else {
-                return Response.ok(images.get(0)).build();
-            }
-        }catch (ServiceException serviceException){
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Messages
-                    .SERVICE_COMMUNICATION_ERROR).build();
-        }
-    }
-
 }

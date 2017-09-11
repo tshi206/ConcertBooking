@@ -1,4 +1,4 @@
-package nz.ac.auckland.concert.service.util;
+package nz.ac.auckland.concert.client.service.util;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;

@@ -45,13 +45,6 @@
 			<artifactId>h2</artifactId>
 			<version>1.4.187</version>
 		</dependency>
-
-		<!-- AWS library. -->
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-			<version>1.11.173</version>
-		</dependency>
     </dependencies>
 	
 		<build>

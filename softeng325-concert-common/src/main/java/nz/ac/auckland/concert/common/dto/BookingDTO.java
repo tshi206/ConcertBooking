@@ -75,7 +75,7 @@ public class BookingDTO {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof SeatDTO))
+		if (!(obj instanceof BookingDTO)) //original version: if (!(obj instanceof SeatDTO)) --- bug?
 			return false;
 		if (obj == this)
 			return true;

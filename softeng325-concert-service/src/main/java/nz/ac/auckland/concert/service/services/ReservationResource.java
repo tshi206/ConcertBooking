@@ -19,6 +19,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.LocalDateTime;
@@ -130,7 +131,7 @@ public class ReservationResource {
     }
 
     @POST
-    @Path("/reservation_request")
+    @Path("/reservation_confirm")
     @Consumes({MediaType.APPLICATION_XML})
     public Response confirmReservation (ReservationDTO reservation,
                                         @CookieParam(Config.CLIENT_COOKIE) Cookie cookie) {
@@ -204,7 +205,8 @@ public class ReservationResource {
                         reserved.getConcertDate().getDate(), bookedSeats,
                         reserved.getConcertTarif().getConcertTarifCompositePK().getPriceBand()));
             });
-            response = Response.ok(bookingDTOS).build();
+            GenericEntity<Set<BookingDTO>> result = new GenericEntity<Set<BookingDTO>>(bookingDTOS){};
+            response = Response.ok(result).build();
         }catch (NonUniqueResultException nonUniqueResultException){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
