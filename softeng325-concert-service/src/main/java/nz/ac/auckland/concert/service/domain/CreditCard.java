@@ -25,7 +25,7 @@ public class CreditCard {
     @Column(name = "ownerName", nullable = false)
     private String _name;
 
-    @Column(name = "number")
+    @Column(name = "number", nullable = false, unique = true)
     private String _number;
 
     @Convert(converter = LocalDateConverter.class)

@@ -138,13 +138,13 @@ public class UserResource {
     @Consumes({MediaType.APPLICATION_XML})
     public Response registerCreditCard (CreditCardDTO creditCardDTO,
                                         @CookieParam(Config.CLIENT_COOKIE) Cookie cookie) {
-        if (cookie == null){
+        if (cookie == null) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.UNAUTHENTICATED_REQUEST).build());
         }
         Response response;
         EntityManager entityManager = persistenceManager.createEntityManager();
-        try{
+        try {
             entityManager.getTransaction().begin();
             TypedQuery<User> queryForUser = entityManager.createQuery("select u from User u where " +
                     "u.token = :token", User.class).setParameter("token", cookie.getValue());
@@ -163,14 +163,18 @@ public class UserResource {
             entityManager.persist(creditCard);
             entityManager.getTransaction().commit();
             response = Response.status(Response.Status.NO_CONTENT).build();
-        }catch (NonUniqueResultException nonUniqueResultException){
+        } catch (NonUniqueResultException nonUniqueResultException) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
                             "Found multiple records in the USER table with the same TOKEN attribute.").build());
-        }catch (NoResultException noResultException){
+        } catch (NoResultException noResultException) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.BAD_AUTHENTICATON_TOKEN).build());
-        }finally {
+        } catch (ConstraintViolationException | NonUniqueObjectException exception){
+            throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
+                    entity("Integrity Violation: " +
+                            "Credit Card of the same number has already been registered in database.").build());
+        } finally {
             if (entityManager!=null && entityManager.isOpen())
                 entityManager.close();
         }
