@@ -16,7 +16,7 @@ public class ConcertDate {
     @Column(name = "date")
     private LocalDateTime date;
 
-    @ManyToOne(cascade={CascadeType.PERSIST})
+    @ManyToOne
     @JoinColumn(name = "cid", nullable = false)
     private Concert concert;
 

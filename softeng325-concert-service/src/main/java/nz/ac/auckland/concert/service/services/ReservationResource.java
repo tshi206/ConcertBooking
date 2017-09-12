@@ -32,7 +32,7 @@ public class ReservationResource {
     private static Logger _logger = LoggerFactory
             .getLogger(ReservationResource.class);
 
-    private PersistenceManager persistenceManager = PersistenceManager.instance();
+    private static PersistenceManager persistenceManager = PersistenceManager.instance();
 
     private Timer timer;
 
@@ -57,7 +57,7 @@ public class ReservationResource {
         try{
             entityManager.getTransaction().begin();
             TypedQuery<User> queryForUser = entityManager.createQuery("select u from User u where " +
-                    "u.token = :token", User.class).setParameter("token", cookie.toString());
+                    "u.token = :token", User.class).setParameter("token", cookie.getValue());
             User user = queryForUser.getSingleResult();
             List<Object> properties = new ArrayList<>();
             properties.add(reservationRequestDTO.getConcertId());
@@ -78,6 +78,7 @@ public class ReservationResource {
             }
             List<Seat> seatsBookedAsList = entityManager.createQuery("select s from Seat s", Seat.class)
                     .getResultList();
+            _logger.info("seats records in DB: " + seatsBookedAsList.size());
             Set<SeatDTO> seatsBooked = new HashSet<>();
             if (!seatsBookedAsList.isEmpty()){
                 seatsBookedAsList.forEach(seat -> seatsBooked.add(new SeatDTO(seat.getSeatCompositePK().getRow(),
@@ -85,20 +86,19 @@ public class ReservationResource {
             }
             Set<SeatDTO> seatsAvailable = TheatreUtility.findAvailableSeats(reservationRequestDTO.getNumberOfSeats(),
                     reservationRequestDTO.getSeatType(), seatsBooked);
+            _logger.info("seats reserved: " + seatsAvailable.size());
             if (seatsAvailable.isEmpty()){
                 throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                         entity(Messages.INSUFFICIENT_SEATS_AVAILABLE_FOR_RESERVATION).build());
             }
             ConcertDate concertDate = entityManager.createQuery("select cd from ConcertDate cd where " +
                     "cd.date = :bookingdate", ConcertDate.class).
-                    setParameter("bookingdate", reservationRequestDTO.getDate()).
-                    setLockMode(LockModeType.OPTIMISTIC).getSingleResult();
+                    setParameter("bookingdate", reservationRequestDTO.getDate()).getSingleResult();
             ConcertTarif concertTarif = entityManager.createQuery("select ct from ConcertTarif ct where " +
                     "ct.concertTarifCompositePK.concert._id = :cid and " +
                     "ct.concertTarifCompositePK.priceBand = :priceBand", ConcertTarif.class).
                     setParameter("cid", reservationRequestDTO.getConcertId()).
-                    setParameter("priceBand", reservationRequestDTO.getSeatType()).
-                    setLockMode(LockModeType.OPTIMISTIC).getSingleResult();
+                    setParameter("priceBand", reservationRequestDTO.getSeatType()).getSingleResult();
             Set<Seat> seatsToBePersisted = new HashSet<>();
             seatsAvailable.forEach(seatDTO -> seatsToBePersisted.add(new Seat(new SeatCompositePK(
                     seatDTO.getRow(), seatDTO.getNumber()
@@ -106,8 +106,13 @@ public class ReservationResource {
             reservation = new Reservation(reservation_id.incrementAndGet(), user,
                     concertDate, concertTarif, seatsToBePersisted
                     );
+            pendingReservation.put(reservation.getRid(), reservation);
+            entityManager.persist(reservation);
+            _logger.info("reservation (persisted) id: " + reservation.getRid());
+            seatsToBePersisted.forEach(seat -> entityManager.persist(seat));
             response = Response.ok(new ReservationDTO(reservation.getRid(), reservationRequestDTO,
                     seatsAvailable)).build();
+            entityManager.getTransaction().commit();
         }catch (NonUniqueResultException nonUniqueResultException){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
@@ -119,14 +124,18 @@ public class ReservationResource {
             if (entityManager!=null && entityManager.isOpen())
                 entityManager.close();
         }
-        pendingReservation.put(reservation.getRid(), reservation);
         timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                pendingReservation.remove(reservation.getRid());
+                Reservation unconfirmedReservation = pendingReservation.remove(reservation.getRid());
+                if (unconfirmedReservation != null){
+                    removeReservation(unconfirmedReservation);
+                }
             }
-        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS * 1000l);
+        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS * 1000l - 100l); //extra 100ms offset in
+        // case the TimerTask execution takes too long before unit test's timeout. In practice this doesn't affect the
+        // service's quality.
         return response;
     }
 
@@ -139,38 +148,39 @@ public class ReservationResource {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.UNAUTHENTICATED_REQUEST).build());
         }
-        Reservation reservationToBePersisted = pendingReservation.remove(reservation.getId());
-        if (reservationToBePersisted == null){
+        Reservation reservationToBeConfirmed = pendingReservation.remove(reservation.getId());
+        if (reservationToBeConfirmed == null){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.EXPIRED_RESERVATION).build());
         }
         Response response;
         EntityManager entityManager = persistenceManager.createEntityManager();
         try{
-            entityManager.getTransaction().begin();
             TypedQuery<User> queryForUser = entityManager.createQuery("select u from User u where " +
-                    "u.token = :token", User.class).setParameter("token", cookie.toString());
+                    "u.token = :token", User.class).setParameter("token", cookie.getValue());
             User user = queryForUser.getSingleResult();
             List<CreditCard> creditCards = entityManager.createQuery("select cc from CreditCard cc where " +
-                    "cc.user.uid = :uid", CreditCard.class).setParameter("uid", user.getUid()).
-                    setLockMode(LockModeType.OPTIMISTIC).getResultList();
+                    "cc.user.uid = :uid", CreditCard.class).setParameter("uid", user.getUid()).getResultList();
             if (creditCards.isEmpty()){
+                removeReservation(reservationToBeConfirmed);
                 throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                         entity(Messages.CREDIT_CARD_NOT_REGISTERED).build());
             }
-            entityManager.persist(reservationToBePersisted);
-            entityManager.getTransaction().commit();
+            _logger.info("is reservation null: " + (reservationToBeConfirmed == null));
             response = Response.status(Response.Status.NO_CONTENT).build();
         }catch (NonUniqueResultException nonUniqueResultException){
+            removeReservation(reservationToBeConfirmed);
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
                             "Found multiple records in the USER table with the same TOKEN attribute.").build());
         }catch (NoResultException noResultException){
+            removeReservation(reservationToBeConfirmed);
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity(Messages.BAD_AUTHENTICATON_TOKEN).build());
         }finally {
-            if (entityManager!=null && entityManager.isOpen())
+            if (entityManager!=null && entityManager.isOpen()){
                 entityManager.close();
+            }
         }
         return response;
     }
@@ -185,19 +195,16 @@ public class ReservationResource {
         Response response;
         EntityManager entityManager = persistenceManager.createEntityManager();
         try {
-            entityManager.getTransaction().begin();
             TypedQuery<User> queryForUser = entityManager.createQuery("select u from User u where " +
-                    "u.token = :token", User.class).setParameter("token", cookie.toString());
+                    "u.token = :token", User.class).setParameter("token", cookie.getValue());
             User user = queryForUser.getSingleResult();
             List<Reservation> reservations = entityManager.createQuery("select r from Reservation r where " +
-                    "r.user.uid = :uid", Reservation.class).setParameter("uid", user.getUid()).
-                    setLockMode(LockModeType.OPTIMISTIC).getResultList();
+                    "r.user.uid = :uid", Reservation.class).setParameter("uid", user.getUid()).getResultList();
             Set<BookingDTO> bookingDTOS = new HashSet<>();
             reservations.forEach(reserved -> {
                 Concert concert = entityManager.createQuery("select c from Concert c where " +
                         "c._id = :id", Concert.class).
-                        setParameter("id", reserved.getConcertDate().getConcert().getId()).
-                        setLockMode(LockModeType.OPTIMISTIC).getSingleResult();
+                        setParameter("id", reserved.getConcertDate().getConcert().getId()).getSingleResult();
                 Set<SeatDTO> bookedSeats = new HashSet<>();
                 reserved.getBookedSeats().forEach(seat -> bookedSeats.add(
                         new SeatDTO(seat.getSeatCompositePK().getRow(), seat.getSeatCompositePK().getNumber())));
@@ -219,5 +226,21 @@ public class ReservationResource {
                 entityManager.close();
         }
         return response;
+    }
+
+    private static void removeReservation(Reservation unconfirmedReservation){
+        EntityManager em = persistenceManager.createEntityManager();
+        em.getTransaction().begin();
+        _logger.info("reservation (to be removed) id: " + unconfirmedReservation.getRid());
+        List<Reservation> persistedReservations = em.createQuery("select r from Reservation r where " +
+                "r.rid = :id", Reservation.class).setParameter("id", unconfirmedReservation.getRid()).
+                setLockMode(LockModeType.OPTIMISTIC).getResultList();
+        if (!persistedReservations.isEmpty()){
+            Set<Seat> seatsPersisted = persistedReservations.get(0).getBookedSeats();
+            seatsPersisted.forEach(seat -> em.remove(seat));
+            em.remove(persistedReservations.get(0));
+        }
+        em.getTransaction().commit();
+        em.close();
     }
 }

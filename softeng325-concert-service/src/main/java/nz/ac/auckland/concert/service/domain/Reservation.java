@@ -30,7 +30,7 @@ public class Reservation {
     })
     private ConcertTarif concertTarif;
 
-    @OneToMany(cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @OneToMany
     @org.hibernate.annotations.Fetch(
             org.hibernate.annotations.FetchMode.SUBSELECT)
     @JoinColumn(

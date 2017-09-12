@@ -18,7 +18,7 @@ public class CreditCard {
     @GeneratedValue
     private Long id;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     private CreditCard.Type _type;
 

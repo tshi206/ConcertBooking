@@ -36,6 +36,7 @@ public class ConcertApplication extends Application {
 		EntityManager entityManager = PersistenceManager.instance().createEntityManager();
 		try {
 			entityManager.getTransaction().begin();
+			entityManager.createQuery("delete from Seat ").executeUpdate();
 			entityManager.createQuery("delete from CreditCard ").executeUpdate();
 			entityManager.createQuery("delete from Reservation ").executeUpdate();
 			entityManager.createQuery("delete from User ").executeUpdate();
@@ -43,6 +44,7 @@ public class ConcertApplication extends Application {
 			_logger.debug(e.getMessage());
 		}finally {
 			if (entityManager!=null && entityManager.isOpen()){
+				entityManager.getTransaction().commit();
 				entityManager.close();
 			}
 		}

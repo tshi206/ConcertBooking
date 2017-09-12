@@ -19,7 +19,7 @@ public class Performer {
     private String _name;
     @Column(name = "imageName")
     private String _imageName;
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     @Column(name = "genre")
     private Genre _genre;
 

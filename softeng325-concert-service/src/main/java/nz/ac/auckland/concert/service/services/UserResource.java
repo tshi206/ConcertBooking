@@ -106,8 +106,13 @@ public class UserResource {
                         entity(Messages.AUTHENTICATE_USER_WITH_ILLEGAL_PASSWORD).build());
             }
             UserDTO authenticatedUser = new UserDTO(username, password, user.getFirstname(), user.getLastname());
-            Cookie token = Cookie.valueOf(user.getToken());
-            response = Response.ok(authenticatedUser).cookie(new NewCookie(token)).build();
+            _logger.info("authentication details: \n" +
+                    "\tusername: " + username + "\n" +
+                    "\tpassword: " + password + "\n" +
+                    "\tfirstname: " + user.getFirstname() + "\n" +
+                    "\tlastname: " + user.getLastname());
+            NewCookie newCookie = new NewCookie(Config.CLIENT_COOKIE, user.getToken());
+            response = Response.ok(authenticatedUser).cookie(newCookie).build();
         }catch (NonUniqueResultException nonUniqueResultException){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
@@ -117,6 +122,7 @@ public class UserResource {
                     entity(Messages.AUTHENTICATE_NON_EXISTENT_USER).build());
         }finally {
             if (entityManager!=null && entityManager.isOpen())
+                entityManager.getTransaction().commit();
                 entityManager.close();
         }
         if (response==null){
@@ -141,7 +147,7 @@ public class UserResource {
         try{
             entityManager.getTransaction().begin();
             TypedQuery<User> queryForUser = entityManager.createQuery("select u from User u where " +
-                    "u.token = :token", User.class).setParameter("token", cookie.toString());
+                    "u.token = :token", User.class).setParameter("token", cookie.getValue());
             User user = queryForUser.getSingleResult();
             CreditCard.Type type = null;
             switch (creditCardDTO.getType()) {

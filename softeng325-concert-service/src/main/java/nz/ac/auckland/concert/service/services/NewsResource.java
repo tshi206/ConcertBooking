@@ -1,7 +1,6 @@
 package nz.ac.auckland.concert.service.services;
 
 import nz.ac.auckland.concert.common.dto.NewsItemDTO;
-import nz.ac.auckland.concert.common.message.Messages;
 import nz.ac.auckland.concert.service.domain.NewsItem;
 import org.hibernate.NonUniqueResultException;
 import org.slf4j.Logger;
@@ -17,8 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Path("/newsItems")
 public class NewsResource {
@@ -38,6 +35,7 @@ public class NewsResource {
             @Override
             public void run() {
                 EntityManager entityManager = persistenceManager.createEntityManager();
+                entityManager.getTransaction().begin();
                 try{
                     NewsItem newsItem = entityManager.createQuery("select n from NewsItem n where " +
                             "n._id = :id", NewsItem.class).setParameter("id", newsId).
@@ -58,6 +56,7 @@ public class NewsResource {
                     _logger.debug("there is no news item with the id: {" + newsId + "} in the DB currently");
                 }finally {
                     if (entityManager!=null && entityManager.isOpen())
+                        entityManager.getTransaction().commit();
                         entityManager.close();
                 }
             }

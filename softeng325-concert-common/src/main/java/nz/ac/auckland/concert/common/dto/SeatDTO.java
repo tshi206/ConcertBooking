@@ -9,6 +9,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 
 /**
  * DTO class to represent seats at the concert venue. 
@@ -21,9 +22,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SeatDTO {
 
-	@XmlAttribute
+	@XmlElement
 	private SeatRow _row;
-	@XmlAttribute
+	@XmlElement
 	private SeatNumber _number;
 	
 	public SeatDTO() {}

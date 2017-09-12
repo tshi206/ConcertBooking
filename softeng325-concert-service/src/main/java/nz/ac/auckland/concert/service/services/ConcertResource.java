@@ -77,8 +77,10 @@ public class ConcertResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Messages
                     .SERVICE_COMMUNICATION_ERROR).build();
         }finally {
-            if (entityManager!=null && entityManager.isOpen())
-            entityManager.close();
+            if (entityManager!=null && entityManager.isOpen()) {
+                entityManager.getTransaction().commit();
+                entityManager.close();
+            }
         }
         GenericEntity<Set<ConcertDTO>> result = new GenericEntity<Set<ConcertDTO>>(concertDTOS){};
         _logger.info("retrieved all concerts successfully");

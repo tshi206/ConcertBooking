@@ -56,6 +56,7 @@ public class PerformerResource {
                     .SERVICE_COMMUNICATION_ERROR).build();
         }finally {
             if (entityManager!=null && entityManager.isOpen())
+                entityManager.getTransaction().commit();
                 entityManager.close();
         }
         GenericEntity<Set<PerformerDTO>> result = new GenericEntity<Set<PerformerDTO>>(performerDTOS){};

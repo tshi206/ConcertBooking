@@ -2,6 +2,8 @@ package nz.ac.auckland.concert.service.domain.jpa;
 
 import nz.ac.auckland.concert.service.domain.Concert;
 import nz.ac.auckland.concert.service.domain.Performer;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Embeddable;
@@ -12,11 +14,11 @@ import java.io.Serializable;
 @Embeddable
 public class ConcertPerformerCompositePK implements Serializable {
 
-    @ManyToOne(cascade={CascadeType.PERSIST})
+    @ManyToOne
     @JoinColumn(name = "cid", nullable = false)
     private Concert concert;
 
-    @ManyToOne(cascade={CascadeType.PERSIST})
+    @ManyToOne
     @JoinColumn(name = "pid", nullable = false)
     private Performer performer;
 
@@ -36,4 +38,25 @@ public class ConcertPerformerCompositePK implements Serializable {
         return performer;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (!(o instanceof ConcertPerformerCompositePK)) return false;
+
+        ConcertPerformerCompositePK that = (ConcertPerformerCompositePK) o;
+
+        return new EqualsBuilder()
+                .append(concert, that.concert)
+                .append(performer, that.performer)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(concert)
+                .append(performer)
+                .toHashCode();
+    }
 }

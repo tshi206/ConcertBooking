@@ -85,6 +85,7 @@ public class DefaultService implements ConcertService {
 					.target(uri).request()
 					.post(Entity.xml(newUser));
 			int responseCode = response.getStatus();
+			_logger.info("response status: "+responseCode);
 			switch (responseCode){
 				case 400:
 					errorMessage = response.readEntity(String.class);
@@ -97,6 +98,7 @@ public class DefaultService implements ConcertService {
 					throw new ServiceException(errorMessage);
 			}
 		}catch (ServiceException serviceException){
+			_logger.info(serviceException.getMessage());
 			throw new ServiceException(errorMessage);
 		}
 		return null;
@@ -112,10 +114,14 @@ public class DefaultService implements ConcertService {
 					.target(uri).request()
 					.post(Entity.xml(user));
 			int responseCode = response.getStatus();
+			_logger.info("response status: "+responseCode);
 			switch (responseCode){
 				case 200:
 					processCookieFromResponse(response);
-					return response.readEntity(UserDTO.class);
+					UserDTO authenticatedUser = response.readEntity(UserDTO.class);
+					UserDTO userDTO = new UserDTO(authenticatedUser.getUsername(), authenticatedUser.getPassword(),
+							authenticatedUser.getFirstname(), authenticatedUser.getLastname());
+					return userDTO;
 				case 500:
 					errorMessage = response.readEntity(String.class);
 					throw new ServiceException(errorMessage);
@@ -157,6 +163,7 @@ public class DefaultService implements ConcertService {
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(reservationRequest));
 			int responseCode = response.getStatus();
+			_logger.info("response status: "+responseCode);
 			switch (responseCode){
 				case 200:
 					return response.readEntity(ReservationDTO.class);
@@ -165,6 +172,7 @@ public class DefaultService implements ConcertService {
 					throw new ServiceException(errorMessage);
 				case 400:
 					errorMessage = response.readEntity(String.class);
+					_logger.info(errorMessage);
 					throw new ServiceException(errorMessage);
 			}
 		}catch (ServiceException serviceException){
@@ -183,14 +191,18 @@ public class DefaultService implements ConcertService {
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(reservation));
 			int responseCode = response.getStatus();
+			_logger.info("response status: "+responseCode);
 			switch (responseCode){
 				case 204:
 					_logger.info("reservation has been successfully confirmed. Service Destination: " + uri);
+					break;
 				case 500:
 					errorMessage = response.readEntity(String.class);
+					_logger.info(errorMessage);
 					throw new ServiceException(errorMessage);
 				case 400:
 					errorMessage = response.readEntity(String.class);
+					_logger.info(errorMessage);
 					throw new ServiceException(errorMessage);
 			}
 		}catch (ServiceException serviceException){
@@ -208,10 +220,12 @@ public class DefaultService implements ConcertService {
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(creditCard));
 			int responseCode = response.getStatus();
+			_logger.info("response status: "+responseCode);
 			switch (responseCode){
 				case 204:
 					_logger.info("credit card details have been successfully registered. " +
 							"Service Destination: " + uri);
+					break;
 				case 500:
 					errorMessage = response.readEntity(String.class);
 					throw new ServiceException(errorMessage);
@@ -291,9 +305,10 @@ public class DefaultService implements ConcertService {
 	// Method to add any cookie previously returned from the Web service to an
 	// Invocation.Builder instance.
 	private void addCookieToInvocation(Builder builder) {
-//		if(!_cookieValues.isEmpty()) {
-//			builder.cookie(Config.CLIENT_COOKIE, _cookieValues.iterator().next());
-//		}
+		if (clientId == null){
+			_logger.info("this client does not have a token authenticated.");
+			return;
+		}
 		builder.cookie(clientId);
 	}
 
@@ -306,8 +321,7 @@ public class DefaultService implements ConcertService {
 
 		if(cookies.containsKey(Config.CLIENT_COOKIE)) {
 			clientId = cookies.get(Config.CLIENT_COOKIE);
-//			String cookieValue = cookies.get(Config.CLIENT_COOKIE).getValue();
-//			_cookieValues.add(cookieValue);
+			_logger.info("received cookie toString: " + clientId.toString() + " ; value: " + clientId.getValue());
 		}
 	}
 }
