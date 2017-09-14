@@ -173,7 +173,7 @@ public class UserResource {
         } catch (ConstraintViolationException | NonUniqueObjectException exception){
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).
                     entity("Integrity Violation: " +
-                            "Credit Card of the same number has already been registered in database.").build());
+                            "This particular Credit Card has already been registered by the current user.").build());
         } finally {
             if (entityManager!=null && entityManager.isOpen())
                 entityManager.close();

@@ -25,7 +25,7 @@ public class CreditCard {
     @Column(name = "ownerName", nullable = false)
     private String _name;
 
-    @Column(name = "number", nullable = false, unique = true)
+    @Column(name = "number", nullable = false)
     private String _number;
 
     @Convert(converter = LocalDateConverter.class)
@@ -92,6 +92,7 @@ public class CreditCard {
                 append(_name, rhs._name).
                 append(_number, rhs._number).
                 append(_expiryDate, rhs._expiryDate).
+                append(user, rhs.user).
                 isEquals();
     }
 
@@ -102,6 +103,7 @@ public class CreditCard {
                 append(_name).
                 append(_number).
                 append(_expiryDate).
+                append(user.getToken()).
                 hashCode();
     }
 }
