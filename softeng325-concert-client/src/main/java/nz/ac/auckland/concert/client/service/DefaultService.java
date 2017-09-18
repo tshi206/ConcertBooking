@@ -303,12 +303,12 @@ public class DefaultService implements ConcertService {
 						client.close();
 						return;
 					}
+					WebTarget nextSubscriptionTarget = client.target(uri + nextNewsId.incrementAndGet());
+					nextSubscriptionTarget.request().async().get(this);
 					listener.newsItemReceived(newsItemDTO);
 					_logger.info("received news item with id: " + newsItemDTO.getId() + "\t" +
 							"Currently subscribed id: " + nextNewsId.get() + "\t" + "Next subscription id: " +
 							(nextNewsId.get()+1L) + " ......");
-					WebTarget nextSubscriptionTarget = client.target(uri + nextNewsId.incrementAndGet());
-					nextSubscriptionTarget.request().async().get(this);
 				}
 
 				@Override
