@@ -331,7 +331,7 @@ public class DefaultService implements ConcertService {
 	// Invocation.Builder instance.
 	private void addCookieToInvocation(Builder builder) {
 		if (clientId == null){
-			_logger.info("this _client does not have a token authenticated.");
+			_logger.info("this client does not have a token authenticated.");
 			return;
 		}
 		builder.cookie(clientId);
