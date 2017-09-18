@@ -26,8 +26,8 @@ public class DefaultService implements ConcertService {
 
 	private static String WEB_SERVICE_URI = "http://localhost:10000/services";
 
-	private static Client _client;
-	private static Server _server;
+	private static Client _client; //in case we need a single _client instance to send multiple request
+	private static Server _server; //in case we need a reference to the server instance established outside this class
 
 	private Cookie clientId;
 
@@ -36,52 +36,58 @@ public class DefaultService implements ConcertService {
 	private AtomicBoolean isCanceled = new AtomicBoolean(false);
 
 	public DefaultService() {
-		_client = ClientBuilder.newClient();
+//		_client = ClientBuilder.newClient(); //in case we need a single _client instance to send multiple request
 		_logger.info("Primary web target destination: " + WEB_SERVICE_URI);
 	}
 
 	public DefaultService(Client client, Server server) {
 		_client = client;
 		_server = server;
+		_logger.info("Primary web target destination: " + _server.getURI());
 	}
 
 	@Override
 	public Set<ConcertDTO> getConcerts() throws ServiceException {
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/concerts";
 			_logger.info("trying to retrieve all concerts from destination: " + uri);
-			Set<ConcertDTO> concertDTOS = _client.target(uri).request()
+			return client.target(uri).request()
 					.accept(MediaType.APPLICATION_XML)
 					.get(new GenericType<Set<ConcertDTO>>() {
 					});
-			return concertDTOS;
 		}catch (ServiceException serviceException){
 			throw new ServiceException(Messages.SERVICE_COMMUNICATION_ERROR);
+		}finally {
+			client.close();
 		}
 	}
 
 	@Override
 	public Set<PerformerDTO> getPerformers() throws ServiceException {
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/performers";
 			_logger.info("trying to retrieve all performers from destination: " + uri);
-			Set<PerformerDTO> performerDTOS = _client.target(uri).request()
+			return client.target(uri).request()
 					.accept(MediaType.APPLICATION_XML)
 					.get(new GenericType<Set<PerformerDTO>>() {
 					});
-			return performerDTOS;
 		}catch (ServiceException serviceException){
 			throw new ServiceException(Messages.SERVICE_COMMUNICATION_ERROR);
+		}finally {
+			client.close();
 		}
 	}
 
 	@Override
 	public UserDTO createUser(UserDTO newUser) throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/users";
 			_logger.info("trying to create a user in destination: " + uri);
-			Response response = _client
+			Response response = client
 					.target(uri).request()
 					.post(Entity.xml(newUser));
 			int responseCode = response.getStatus();
@@ -100,6 +106,8 @@ public class DefaultService implements ConcertService {
 		}catch (ServiceException serviceException){
 			_logger.info(serviceException.getMessage());
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 		return null;
 	}
@@ -107,10 +115,11 @@ public class DefaultService implements ConcertService {
 	@Override
 	public UserDTO authenticateUser(UserDTO user) throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/users/authenticate";
 			_logger.info("trying to authenticate a user in destination: " + uri);
-			Response response = _client
+			Response response = client
 					.target(uri).request()
 					.post(Entity.xml(user));
 			int responseCode = response.getStatus();
@@ -119,9 +128,8 @@ public class DefaultService implements ConcertService {
 				case 200:
 					processCookieFromResponse(response);
 					UserDTO authenticatedUser = response.readEntity(UserDTO.class);
-					UserDTO userDTO = new UserDTO(authenticatedUser.getUsername(), authenticatedUser.getPassword(),
+					return new UserDTO(authenticatedUser.getUsername(), authenticatedUser.getPassword(),
 							authenticatedUser.getFirstname(), authenticatedUser.getLastname());
-					return userDTO;
 				case 500:
 					errorMessage = response.readEntity(String.class);
 					throw new ServiceException(errorMessage);
@@ -131,6 +139,8 @@ public class DefaultService implements ConcertService {
 			}
 		}catch (ServiceException serviceException){
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 		return null;
 	}
@@ -156,10 +166,11 @@ public class DefaultService implements ConcertService {
 	@Override
 	public ReservationDTO reserveSeats(ReservationRequestDTO reservationRequest) throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/reservations/reservation_request";
 			_logger.info("trying to establish a reservation request in destination: " + uri);
-			Builder builder = _client.target(uri).request();
+			Builder builder = client.target(uri).request();
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(reservationRequest));
 			int responseCode = response.getStatus();
@@ -177,6 +188,8 @@ public class DefaultService implements ConcertService {
 			}
 		}catch (ServiceException serviceException){
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 		return null;
 	}
@@ -184,10 +197,11 @@ public class DefaultService implements ConcertService {
 	@Override
 	public void confirmReservation(ReservationDTO reservation) throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/reservations/reservation_confirm";
 			_logger.info("trying to confirm a reservation in destination: " + uri);
-			Builder builder = _client.target(uri).request();
+			Builder builder = client.target(uri).request();
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(reservation));
 			int responseCode = response.getStatus();
@@ -207,16 +221,19 @@ public class DefaultService implements ConcertService {
 			}
 		}catch (ServiceException serviceException){
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 	}
 
 	@Override
 	public void registerCreditCard(CreditCardDTO creditCard) throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/users/CreditCardRegistration";
 			_logger.info("trying to register a CreditCard object in destination: " + uri);
-			Builder builder = _client.target(uri).request();
+			Builder builder = client.target(uri).request();
 			addCookieToInvocation(builder);
 			Response response = builder.post(Entity.xml(creditCard));
 			int responseCode = response.getStatus();
@@ -235,16 +252,19 @@ public class DefaultService implements ConcertService {
 			}
 		}catch (ServiceException serviceException){
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 	}
 
 	@Override
 	public Set<BookingDTO> getBookings() throws ServiceException {
 		String errorMessage = Messages.SERVICE_COMMUNICATION_ERROR;
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/reservations";
 			_logger.info("trying to retrieve all reservations for the current user in destination: " + uri);
-			Builder builder = _client.target(uri).request();
+			Builder builder = client.target(uri).request();
 			addCookieToInvocation(builder);
 			Response response = builder.accept(MediaType.APPLICATION_XML).get();
 			int responseCode = response.getStatus();
@@ -260,6 +280,8 @@ public class DefaultService implements ConcertService {
 			}
 		}catch (ServiceException serviceException){
 			throw new ServiceException(errorMessage);
+		}finally {
+			client.close();
 		}
 		return null;
 	}
@@ -267,22 +289,25 @@ public class DefaultService implements ConcertService {
 	@Override
 	public void subscribeForNewsItems(NewsItemListener listener) {
 		isCanceled.set(false);
+		Client client = ClientBuilder.newClient();
 		try{
 			String uri = WEB_SERVICE_URI+"/newsItems/subscribe/";
-			WebTarget target = _client.target(uri + nextNewsId.incrementAndGet());
+			WebTarget target = client.target(uri + nextNewsId.incrementAndGet());
 			target.request().async().get(new InvocationCallback<NewsItemDTO>() {
 				@Override
 				public void completed(NewsItemDTO newsItemDTO) {
+					Client client = ClientBuilder.newClient();
 					if (isCanceled.get()){
 						_logger.info("subscription canceled. no further news item would arrive.\t" +
 								"Cancellation with current subscription id: " + nextNewsId.get());
+						client.close();
 						return;
 					}
+					listener.newsItemReceived(newsItemDTO);
 					_logger.info("received news item with id: " + newsItemDTO.getId() + "\t" +
 							"Currently subscribed id: " + nextNewsId.get() + "\t" + "Next subscription id: " +
 							(nextNewsId.get()+1L) + " ......");
-					listener.newsItemReceived(newsItemDTO);
-					WebTarget nextSubscriptionTarget = _client.target(uri + nextNewsId.incrementAndGet());
+					WebTarget nextSubscriptionTarget = client.target(uri + nextNewsId.incrementAndGet());
 					nextSubscriptionTarget.request().async().get(this);
 				}
 
@@ -306,7 +331,7 @@ public class DefaultService implements ConcertService {
 	// Invocation.Builder instance.
 	private void addCookieToInvocation(Builder builder) {
 		if (clientId == null){
-			_logger.info("this client does not have a token authenticated.");
+			_logger.info("this _client does not have a token authenticated.");
 			return;
 		}
 		builder.cookie(clientId);

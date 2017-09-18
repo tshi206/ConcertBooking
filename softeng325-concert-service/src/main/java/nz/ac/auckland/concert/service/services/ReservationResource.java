@@ -133,9 +133,9 @@ public class ReservationResource {
                     removeReservation(unconfirmedReservation);
                 }
             }
-        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS * 1000l - 100l); //extra 100ms offset in
-        // case the TimerTask execution takes too long before unit test's timeout. In practice this doesn't affect the
-        // service's quality.
+        }, (long) ConcertApplication.RESERVATION_EXPIRY_TIME_IN_SECONDS * 1000l - 0l); //may require extra 100ms
+        // offset in case the TimerTask execution takes too long before unit test's timeout. In practice this doesn't
+        // affect the service's quality.
         return response;
     }
 
